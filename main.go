@@ -10,7 +10,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 )
+
+func timeout(out chan string, duration time.Duration) {
+	time.Sleep(duration)
+	out <- "?"
+}
 
 func getLocalIp(out chan string) {
 	if conn, err := net.Dial("udp", "8.8.8.8:80"); err == nil {
@@ -37,16 +43,19 @@ func getPublicIpCache(out chan string) {
 }
 
 func main() {
-	info := make(chan string)
+	local := make(chan string)
+	public := make(chan string)
 
-	fmt.Println(getLocalIp())
+	go timeout(local, 1*time.Second)
+	go timeout(public, 1*time.Second)
+
 	fmt.Println(os.TempDir())
 
-	go getIpCache(info)
-	go getPublicIpRemote(info, "http://ipinfo.io/ip")
-	go getPublicIpRemote(info, "http://ipecho.net/plain")
+	go getLocalIp(local)
+	go getPublicIpRemote(public, "http://ipinfo.io/ip")
+	go getPublicIpRemote(public, "http://ipecho.net/plain")
 	//fmt.Println("\"%s\"", getPublicIpRemote("http://ipinfo.io/ip"))
 	//fmt.Println("\"%s\"", getPublicIpRemote("http://ipecho.net/plain"))
 
-	fmt.Println(<-info)
+	fmt.Printf("%s/%s\n", <-local, <-public)
 }
