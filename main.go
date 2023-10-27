@@ -7,30 +7,50 @@ package main
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
-	"time"
 )
 
-func httpGet(url string) string {
+func getLocalIp() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "?"
+	}
+	defer conn.Close()
+
+	localAddress := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddress.IP.String()
+}
+
+func getPublicIpRemote(out chan string, url string) {
 	result, err := http.Get(url)
 	if err != nil {
-		return ""
+		return
 	}
 	cooked, err := io.ReadAll(result.Body)
 	if err != nil {
-		return ""
+		return
 	}
-	fmt.Println(string(cooked))
-	return string(cooked)
+	out <- url + ":" + string(cooked)
+}
+
+func getPublicIpCache(out chan string) {
+	out <- "Dummy"
 }
 
 func main() {
+	info := make(chan string)
+
+	fmt.Println(getLocalIp())
 	fmt.Println(os.TempDir())
 
-	go httpGet("http://ipinfo.io/ip")
-	go httpGet("http://ipecho.net/plain")
-	//fmt.Println("\"%s\"", httpGet("http://ipinfo.io/ip"))
-	//fmt.Println("\"%s\"", httpGet("http://ipecho.net/plain"))
-	time.Sleep(1 * time.Second)
+	go getIpCache(info)
+	go getPublicIpRemote(info, "http://ipinfo.io/ip")
+	go getPublicIpRemote(info, "http://ipecho.net/plain")
+	//fmt.Println("\"%s\"", getPublicIpRemote("http://ipinfo.io/ip"))
+	//fmt.Println("\"%s\"", getPublicIpRemote("http://ipecho.net/plain"))
+
+	fmt.Println(<-info)
 }
