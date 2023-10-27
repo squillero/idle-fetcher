@@ -12,16 +12,12 @@ import (
 	"os"
 )
 
-func getLocalIp() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		return "?"
+func getLocalIp(out chan string) {
+	if conn, err := net.Dial("udp", "8.8.8.8:80"); err == nil {
+		defer conn.Close()
+		localAddress := conn.LocalAddr().(*net.UDPAddr)
+		out <- localAddress.IP.String()
 	}
-	defer conn.Close()
-
-	localAddress := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddress.IP.String()
 }
 
 func getPublicIpRemote(out chan string, url string) {
