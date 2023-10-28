@@ -10,8 +10,11 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
+
+const cache_file string = "idle-fetcher.cache"
 
 func timeout(out chan string, duration time.Duration) {
 	time.Sleep(duration)
@@ -39,23 +42,40 @@ func getPublicIpRemote(out chan string, url string) {
 }
 
 func getPublicIpCache(out chan string) {
-	out <- "Dummy"
+	cache, err := os.Open(filepath.Join(os.TempDir(), cache_file))
+	if err != nil {
+		return
+	}
+	defer cache.Close()
+	var local, public string
+	fmt.Fscanf(cache, "%s %s", &local, &public)
+	fmt.Println("ZZZZ: ", local, public)
+	out <- "CACHED:" + public
 }
 
 func main() {
-	local := make(chan string)
-	public := make(chan string)
+	chanLocal := make(chan string)
+	chanPublic := make(chan string)
 
-	go timeout(local, 1*time.Second)
-	go timeout(public, 1*time.Second)
+	go timeout(chanLocal, 1*time.Second)
+	go timeout(chanPublic, 1*time.Second)
 
-	fmt.Println(os.TempDir())
+	go getLocalIp(chanLocal)
+	go getPublicIpCache(chanPublic)
+	go getPublicIpRemote(chanPublic, "http://ipinfo.io/ip")
+	go getPublicIpRemote(chanPublic, "http://ipecho.net/plain")
 
-	go getLocalIp(local)
-	go getPublicIpRemote(public, "http://ipinfo.io/ip")
-	go getPublicIpRemote(public, "http://ipecho.net/plain")
-	//fmt.Println("\"%s\"", getPublicIpRemote("http://ipinfo.io/ip"))
-	//fmt.Println("\"%s\"", getPublicIpRemote("http://ipecho.net/plain"))
+	local := <-chanLocal
+	public := <-chanPublic
 
-	fmt.Printf("%s/%s\n", <-local, <-public)
+	cache, err := os.Create(filepath.Join(os.TempDir(), cache_file))
+	if err != nil {
+		return
+	}
+	defer cache.Close()
+	cache.WriteString(fmt.Sprintf("%s %s", local, public))
+
+	fmt.Printf("%s/%s\n", local, public)
+	fmt.Printf("Cache: %s\n", filepath.Join(os.TempDir(), cache_file))
+
 }
