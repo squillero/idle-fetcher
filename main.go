@@ -7,13 +7,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
 )
 
 var CacheFile = filepath.Join(os.TempDir(), "idle-fetcher.json")
-var Verbose bool
+
+// FLAGS
+var Verbose bool = false
+var NoCache bool = false
 
 type IpInfo struct {
 	Ip        string
@@ -27,17 +31,43 @@ type NetworkInterface struct {
 }
 
 func main() {
-	flag.BoolVar(&Verbose, "v", false, "Be verbose during operations")
-	clearFlag := flag.Bool("c", false, "Clear cache before running")
+	flag.BoolVar(&Verbose, "v", false, "Verbose operations")
+	flag.BoolVar(&NoCache, "n", false, "Don't use cache")
+	clearCache := flag.Bool("r", false, "Remove cache before running")
+
 	flag.Parse()
 
-	if *clearFlag {
-		if Verbose {
-			fmt.Printf("Clearing cachefile '%s'\n", CacheFile)
+	if *clearCache {
+		if err := os.Remove(CacheFile); err == nil && Verbose {
+			log.Printf("Removed '%s'\n", CacheFile)
 		}
-		os.Remove(CacheFile)
 	}
 
 	info := idler()
-	fmt.Printf("%s/%s\n", info.LocalAddress.Ip, info.PublicAddress.Ip)
+
+	if Verbose {
+		var cached string
+		if info.LocalAddress.cached {
+			cached = " (cached)"
+		} else {
+			cached = ""
+		}
+		log.Printf("Got local IP info from %s%s\n", info.LocalAddress.Source, cached)
+		if info.PublicAddress.cached {
+			cached = " (cached)"
+		} else {
+			cached = ""
+		}
+		log.Printf("Got public IP info from %s%s\n", info.PublicAddress.Source, cached)
+	}
+
+	if info.LocalAddress.Ip == "" {
+		fmt.Printf("not connected\n")
+	} else if info.PublicAddress.Ip == "" {
+		fmt.Printf("%s (local)\n", info.LocalAddress.Ip)
+	} else if info.LocalAddress.Ip == info.PublicAddress.Ip {
+		fmt.Printf("%s\n", info.LocalAddress.Ip)
+	} else {
+		fmt.Printf("%s/%s\n", info.LocalAddress.Ip, info.PublicAddress.Ip)
+	}
 }

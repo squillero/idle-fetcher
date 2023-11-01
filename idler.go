@@ -6,7 +6,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -16,7 +16,6 @@ func timeout(out chan IpInfo, defaultValue string, duration time.Duration) {
 	out <- IpInfo{
 		Ip:        defaultValue,
 		Source:    "Timeout",
-		cached:    false,
 		Timestamp: time.Now(),
 	}
 }
@@ -28,8 +27,11 @@ func idler() NetworkInterface {
 	go timeout(chanLocal, "", 1*time.Second)
 	go timeout(chanPublic, "", 1*time.Second)
 
-	go getLocalIp(chanLocal)
-	go readCache(chanLocal, chanPublic)
+	if !NoCache {
+		go readCache(chanLocal, chanPublic)
+	}
+	go getLocalIpUDP(chanLocal)
+	go getLocalIpIFACE(chanLocal)
 	go getPublicIpRemote(chanPublic, "http://ipinfo.io/ip")
 	go getPublicIpRemote(chanPublic, "http://ipecho.net/plain")
 
@@ -38,28 +40,38 @@ func idler() NetworkInterface {
 		PublicAddress: <-chanPublic,
 	}
 
-	if cache, err := os.Create(CacheFile); err == nil {
-		updateCache(cache, info)
-		defer cache.Close()
+	if !NoCache {
+		updateCache(info)
 	}
 
 	return info
 }
 
-func updateCache(cache *os.File, info NetworkInterface) {
-
+func updateCache(info NetworkInterface) {
 	file, _ := json.MarshalIndent(info, "", "    ")
-	if err := os.WriteFile(CacheFile, file, 0644); err == nil && Verbose {
-		fmt.Printf("Updating cachefile '%s'\n", CacheFile)
+	if err := os.WriteFile(CacheFile, file, 0600); err != nil && Verbose {
+		log.Println("Error updating cache", err)
 	}
-
 }
 
 func readCache(local chan IpInfo, public chan IpInfo) {
 	var info NetworkInterface
-	if data, err := os.ReadFile(CacheFile); err == nil {
-		json.Unmarshal(data, &info)
-		info.LocalAddress.cached = true
+	data, err := os.ReadFile(CacheFile)
+	if err != nil {
+		if Verbose {
+			log.Println("Can't read cache:", err)
+		}
+		return
+	} else {
+		if Verbose {
+			log.Printf("Reading '%s'\n", CacheFile)
+		}
+	}
+	if err := json.Unmarshal(data, &info); err != nil {
+		return
+	}
+	diff := time.Now().Sub(info.PublicAddress.Timestamp)
+	if diff < 8*time.Hour {
 		info.PublicAddress.cached = true
 		public <- info.PublicAddress
 	}

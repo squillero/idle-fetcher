@@ -9,15 +9,33 @@ import (
 	"time"
 )
 
-func getLocalIp(out chan IpInfo) {
+func getLocalIpUDP(out chan IpInfo) {
 	if conn, err := net.Dial("udp", "8.8.8.8:80"); err == nil {
 		defer conn.Close()
 		localAddress := conn.LocalAddr().(*net.UDPAddr)
 		out <- IpInfo{
 			Ip:        localAddress.IP.String(),
-			Source:    "UDP",
-			cached:    true,
+			Source:    "UDP/conn.LocalAddr",
 			Timestamp: time.Now(),
+		}
+	}
+}
+
+func getLocalIpIFACE(out chan IpInfo) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				out <- IpInfo{
+					Ip:        ipnet.IP.String(),
+					Source:    "net.IPNet",
+					Timestamp: time.Now(),
+				}
+			}
 		}
 	}
 }

@@ -22,7 +22,6 @@ func getPublicIpRemote(out chan IpInfo, url string) {
 	out <- IpInfo{
 		Ip:        string(cooked),
 		Source:    url,
-		cached:    true,
 		Timestamp: time.Now(),
 	}
 }
