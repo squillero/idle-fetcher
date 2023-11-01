@@ -5,77 +5,39 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"io"
-	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 )
 
-const cache_file string = "idle-fetcher.cache"
+var CacheFile = filepath.Join(os.TempDir(), "idle-fetcher.json")
+var Verbose bool
 
-func timeout(out chan string, duration time.Duration) {
-	time.Sleep(duration)
-	out <- "?"
+type IpInfo struct {
+	Ip        string
+	Source    string
+	Timestamp time.Time
+	cached    bool
 }
 
-func getLocalIp(out chan string) {
-	if conn, err := net.Dial("udp", "8.8.8.8:80"); err == nil {
-		defer conn.Close()
-		localAddress := conn.LocalAddr().(*net.UDPAddr)
-		out <- localAddress.IP.String()
-	}
-}
-
-func getPublicIpRemote(out chan string, url string) {
-	result, err := http.Get(url)
-	if err != nil {
-		return
-	}
-	cooked, err := io.ReadAll(result.Body)
-	if err != nil {
-		return
-	}
-	out <- url + ":" + string(cooked)
-}
-
-func getPublicIpCache(out chan string) {
-	cache, err := os.Open(filepath.Join(os.TempDir(), cache_file))
-	if err != nil {
-		return
-	}
-	defer cache.Close()
-	var local, public string
-	fmt.Fscanf(cache, "%s %s", &local, &public)
-	fmt.Println("ZZZZ: ", local, public)
-	out <- "CACHED:" + public
+type NetworkInterface struct {
+	LocalAddress, PublicAddress IpInfo
 }
 
 func main() {
-	chanLocal := make(chan string)
-	chanPublic := make(chan string)
+	flag.BoolVar(&Verbose, "v", false, "Be verbose during operations")
+	clearFlag := flag.Bool("c", false, "Clear cache before running")
+	flag.Parse()
 
-	go timeout(chanLocal, 1*time.Second)
-	go timeout(chanPublic, 1*time.Second)
-
-	go getLocalIp(chanLocal)
-	go getPublicIpCache(chanPublic)
-	go getPublicIpRemote(chanPublic, "http://ipinfo.io/ip")
-	go getPublicIpRemote(chanPublic, "http://ipecho.net/plain")
-
-	local := <-chanLocal
-	public := <-chanPublic
-
-	cache, err := os.Create(filepath.Join(os.TempDir(), cache_file))
-	if err != nil {
-		return
+	if *clearFlag {
+		if Verbose {
+			fmt.Printf("Clearing cachefile '%s'\n", CacheFile)
+		}
+		os.Remove(CacheFile)
 	}
-	defer cache.Close()
-	cache.WriteString(fmt.Sprintf("%s %s", local, public))
 
-	fmt.Printf("%s/%s\n", local, public)
-	fmt.Printf("Cache: %s\n", filepath.Join(os.TempDir(), cache_file))
-
+	info := idler()
+	fmt.Printf("%s/%s\n", info.LocalAddress.Ip, info.PublicAddress.Ip)
 }
