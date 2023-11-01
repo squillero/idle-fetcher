@@ -62,7 +62,8 @@ func main() {
 	}
 
 	if info.LocalAddress.Ip == "" {
-		fmt.Printf("not connected\n")
+		hostname, _ := os.Hostname()
+		fmt.Printf("%s (not connected)\n", hostname)
 	} else if info.PublicAddress.Ip == "" {
 		fmt.Printf("%s (local)\n", info.LocalAddress.Ip)
 	} else if info.LocalAddress.Ip == info.PublicAddress.Ip {

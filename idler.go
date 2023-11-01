@@ -24,14 +24,15 @@ func idler() NetworkInterface {
 	chanLocal := make(chan IpInfo)
 	chanPublic := make(chan IpInfo)
 
-	go timeout(chanLocal, "", 1*time.Second)
-	go timeout(chanPublic, "", 1*time.Second)
+	go timeout(chanLocal, "", 1000*time.Millisecond)
+	go timeout(chanPublic, "", 1000*time.Millisecond)
 
 	if !NoCache {
 		go readCache(chanLocal, chanPublic)
 	}
 	go getLocalIpUDP(chanLocal)
 	go getLocalIpIFACE(chanLocal)
+	//go getLocalHostname(chanLocal)
 	go getPublicIpRemote(chanPublic, "http://ipinfo.io/ip")
 	go getPublicIpRemote(chanPublic, "http://ipecho.net/plain")
 

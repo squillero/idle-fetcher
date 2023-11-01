@@ -6,6 +6,7 @@ package main
 
 import (
 	"net"
+	"os"
 	"time"
 )
 
@@ -36,6 +37,18 @@ func getLocalIpIFACE(out chan IpInfo) {
 					Timestamp: time.Now(),
 				}
 			}
+		}
+	}
+}
+
+func getLocalHostname(out chan IpInfo) {
+	time.Sleep(1800 * time.Millisecond)
+	if hostname, err := os.Hostname(); err == nil {
+		out <- IpInfo{
+			Ip:        hostname,
+			Source:    "os.Hostname",
+			Timestamp: time.Now(),
+			cached:    false,
 		}
 	}
 }
