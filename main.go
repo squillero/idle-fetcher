@@ -34,8 +34,9 @@ func main() {
 	flag.BoolVar(&Verbose, "v", false, "Verbose operations")
 	flag.BoolVar(&NoCache, "n", false, "Don't use cache")
 	clearCache := flag.Bool("r", false, "Remove cache before running")
-
 	flag.Parse()
+
+	log.SetPrefix("[IdleFetcher] ")
 
 	if *clearCache {
 		if err := os.Remove(CacheFile); err == nil && Verbose {

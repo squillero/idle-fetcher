@@ -24,8 +24,8 @@ func idler() NetworkInterface {
 	chanLocal := make(chan IpInfo)
 	chanPublic := make(chan IpInfo)
 
-	go timeout(chanLocal, "", 1000*time.Millisecond)
-	go timeout(chanPublic, "", 1000*time.Millisecond)
+	go timeout(chanLocal, "", 3000*time.Millisecond)
+	go timeout(chanPublic, "", 3000*time.Millisecond)
 
 	if !NoCache {
 		go readCache(chanLocal, chanPublic)
@@ -60,7 +60,7 @@ func readCache(local chan IpInfo, public chan IpInfo) {
 	data, err := os.ReadFile(CacheFile)
 	if err != nil {
 		if Verbose {
-			log.Println("Can't read cache:", err)
+			log.Println(err)
 		}
 		return
 	} else {
