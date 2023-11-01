@@ -18,6 +18,7 @@ func getLocalIpUDP(out chan IpInfo) {
 			Ip:        localAddress.IP.String(),
 			Source:    "UDP/conn.LocalAddr",
 			Timestamp: time.Now(),
+			reliable:  true,
 		}
 	}
 }
@@ -35,6 +36,7 @@ func getLocalIpIFACE(out chan IpInfo) {
 					Ip:        ipnet.IP.String(),
 					Source:    "net.IPNet",
 					Timestamp: time.Now(),
+					reliable:  true,
 				}
 			}
 		}
@@ -48,7 +50,6 @@ func getLocalHostname(out chan IpInfo) {
 			Ip:        hostname,
 			Source:    "os.Hostname",
 			Timestamp: time.Now(),
-			cached:    false,
 		}
 	}
 }

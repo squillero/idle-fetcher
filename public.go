@@ -23,5 +23,6 @@ func getPublicIpRemote(out chan IpInfo, url string) {
 		Ip:        string(cooked),
 		Source:    url,
 		Timestamp: time.Now(),
+		reliable:  true,
 	}
 }

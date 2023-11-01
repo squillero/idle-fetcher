@@ -24,8 +24,8 @@ func idler() NetworkInterface {
 	chanLocal := make(chan IpInfo)
 	chanPublic := make(chan IpInfo)
 
-	go timeout(chanLocal, "", 3000*time.Millisecond)
-	go timeout(chanPublic, "", 3000*time.Millisecond)
+	go timeout(chanLocal, "", 2000*time.Millisecond)
+	go timeout(chanPublic, "", 2000*time.Millisecond)
 
 	if !NoCache {
 		go readCache(chanLocal, chanPublic)
@@ -48,11 +48,18 @@ func idler() NetworkInterface {
 	return info
 }
 
-func updateCache(info NetworkInterface) {
+func updateCache(info NetworkInterface) bool {
+	if !info.LocalAddress.reliable || !info.PublicAddress.reliable {
+		if Verbose {
+			log.Println("Not updating cache as information is not reliable")
+		}
+		return false
+	}
 	file, _ := json.MarshalIndent(info, "", "    ")
 	if err := os.WriteFile(CacheFile, file, 0600); err != nil && Verbose {
 		log.Println("Error updating cache", err)
 	}
+	return true
 }
 
 func readCache(local chan IpInfo, public chan IpInfo) {

@@ -23,6 +23,7 @@ type IpInfo struct {
 	Ip        string
 	Source    string
 	Timestamp time.Time
+	reliable  bool
 	cached    bool
 }
 
