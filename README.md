@@ -13,4 +13,4 @@ That is, a simple excuse for writing few lines of Go.
 * Reasonably fast (exploits multiple methods to get IPs in parallel and caches the result for some time)
 
 **Copyright © 2023 by Giovanni Squillero**  
-Distributed under the [Zero-Clause BSD License](https://tldrlegal.com/license/bsd-0-clause-license) (SPDX: [0BSD](https://spdx.org/licenses/0BSD.html)), which allows unlimited freedom without the requirement to include legal notices.
+Distributed under a [Zero-Clause BSD](https://tldrlegal.com/license/bsd-0-clause-license) License (SPDX: [0BSD](https://spdx.org/licenses/0BSD.html)), which allows unlimited freedom without the requirement to include legal notices.
