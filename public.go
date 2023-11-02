@@ -7,6 +7,7 @@ package main
 import (
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -20,7 +21,7 @@ func getPublicIpRemote(out chan IpInfo, url string) {
 		return
 	}
 	out <- IpInfo{
-		Ip:        string(cooked),
+		Ip:        strings.TrimSpace(string(cooked)),
 		Source:    url,
 		Timestamp: time.Now(),
 		reliable:  true,

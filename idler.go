@@ -32,9 +32,13 @@ func idler() NetworkInterface {
 	}
 	go getLocalIpUDP(chanLocal)
 	go getLocalIpIFACE(chanLocal)
-	//go getLocalHostname(chanLocal)
+	go getLocalHostname(chanLocal)
 	go getPublicIpRemote(chanPublic, "http://ipinfo.io/ip")
 	go getPublicIpRemote(chanPublic, "http://ipecho.net/plain")
+	go getPublicIpRemote(chanPublic, "http://api4.ipify.org/")
+	go getPublicIpRemote(chanPublic, "https://checkip.amazonaws.com/")
+	go getPublicIpRemote(chanPublic, "https://icanhazip.com/")
+	go getPublicIpRemote(chanPublic, "http://ifconfig.me/ip")
 
 	info := NetworkInterface{
 		LocalAddress:  <-chanLocal,
